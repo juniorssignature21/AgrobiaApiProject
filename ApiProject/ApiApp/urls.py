@@ -11,7 +11,8 @@ from .views import (
     OrderDetailView,
     CategoryListView,
     CategoryDetailView,
-    CreatePaymentIntentAPIView
+    create_payment,
+    execute_payment
 )
 
 
@@ -27,7 +28,9 @@ urlpatterns = [
     path('orders/<int:pk>/', OrderDetailView.as_view(), name='order_detail'),
     path('categories/', CategoryListView.as_view(), name='category_list'),
     path('categories/<int:pk>/', CategoryDetailView.as_view(), name='category_detail'),
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('api/create-payment-intent/', CreatePaymentIntentAPIView.as_view(), name='create_payment_intent'),
+    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('payment/create/', create_payment, name='create_payment'),
+    path('payment/execute/', execute_payment, name='execute_payment'),
+    # path('api/create-payment-intent/', CreatePaymentIntentAPIView.as_view(), name='create_payment_intent'),
 ]

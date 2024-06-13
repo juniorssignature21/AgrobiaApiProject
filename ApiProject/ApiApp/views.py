@@ -12,6 +12,7 @@ from django.conf import settings
 import paypalrestsdk
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
+import json
 
 # Configure PayPal SDK
 paypalrestsdk.configure({
@@ -23,42 +24,52 @@ paypalrestsdk.configure({
 @csrf_exempt
 def create_payment(request):
     if request.method == "POST":
-        payment = paypalrestsdk.Payment({
-            "intent": "sale",
-            "payer": {
-                "payment_method": "paypal"
-            },
-            "redirect_urls": {
-                "return_url": "http://localhost:8000/payment/execute/",
-                "cancel_url": "http://localhost:8000/payment/cancel/"
-            },
-            "transactions": [{
-                "item_list": {
-                    "items": [{
-                        "name": "Farm Produce",
-                        "sku": "001",
-                        "price": "10.00",
-                        "currency": "USD",
-                        "quantity": 1
-                    }]
-                },
-                "amount": {
-                    "total": "10.00",
-                    "currency": "USD"
-                },
-                "description": "Payment for farm produce"
-            }]
-        })
+        try:
+            body = json.loads(request.body)
+            print("Request Body:", body)  # Debug print
 
-        if payment.create():
-            for link in payment.links:
-                if link.rel == "approval_url":
-                    approval_url = str(link.href)
-                    return JsonResponse({"approval_url": approval_url})
-        else:
-            return JsonResponse({"error": payment.error}, status=400)
-    return HttpResponseBadRequest("Invalid request method.")
+            payment = paypalrestsdk.Payment({
+                "intent": "sale",
+                "payer": {
+                    "payment_method": "paypal"
+                },
+                "redirect_urls": {
+                    "return_url": "http://localhost:8000/api/payment/execute/",
+                    "cancel_url": "http://localhost:8000/api/payment/cancel/"
+                },
+                "transactions": [{
+                    "item_list": {
+                        "items": [{
+                            "name": "Farm Produce",
+                            "sku": "001",
+                            "price": "10.00",
+                            "currency": "USD",
+                            "quantity": 1
+                        }]
+                    },
+                    "amount": {
+                        "total": "10.00",
+                        "currency": "USD"
+                    },
+                    "description": "Payment for farm produce"
+                }]
+            })
 
+            if payment.create():
+                for link in payment.links:
+                    if link.rel == "approval_url":
+                        approval_url = str(link.href)
+                        return JsonResponse({"approval_url": approval_url})
+            else:
+                print("Payment Error:", payment.error)  # Debug print
+                return JsonResponse({"error": payment.error}, status=400)
+        except Exception as e:
+            print("Exception:", str(e))  # Debug print
+            return JsonResponse({"error": str(e)}, status=400)
+    else:
+        print("Invalid request method")  # Debug print
+        return HttpResponseBadRequest("Invalid request method.")
+    
 @csrf_exempt
 def execute_payment(request):
     if request.method == "POST":
@@ -72,7 +83,6 @@ def execute_payment(request):
         else:
             return JsonResponse({"error": payment.error}, status=400)
     return HttpResponseBadRequest("Invalid request method.")
-
 
 
 class ProductListAPIView(APIView):
